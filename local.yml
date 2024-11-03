@@ -1,0 +1,104 @@
+---
+services:
+  fit_api: &fit_api
+    build:
+      context: .
+      dockerfile: ./docker/local/django/Dockerfile
+    image: fit_api
+    container_name: fit_api
+    volumes:
+      - ./api:/app:z
+      - fit_static_data:/app/static
+    expose:
+      - "8000"
+    env_file:
+      - ./.envs/.env.local
+    depends_on:
+      - fit_postgres_db
+      - fit_redis
+    command: /start
+    networks:
+      - fit_nw
+
+  fit_postgres_db:
+    build:
+      context: .
+      dockerfile: ./docker/local/postgres/Dockerfile
+    image: fit_postgres_db
+    container_name: fit_postgres_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - fit_postgres_db_data:/var/lib/postgresql/data
+    env_file:
+      - ./.envs/.env.local
+    networks:
+      - fit_nw
+  fit_client:
+    build:
+      context: ./client
+      dockerfile: ../docker/local/react/Dockerfile
+    image: fit_client
+    container_name: fit_client
+    expose:
+      - "5173"
+    volumes:
+      - ./client:/app
+      - /app/node_modules
+    networks:
+      - fit_nw
+
+  fit_redis:
+    image: redis:7.2.5-alpine3.20
+    command: redis-server --appendonly yes
+    container_name: fit_redis
+    volumes:
+      - fit_redis_data:/data
+    networks:
+      - fit_nw
+
+  fit_celery_worker:
+    <<: *fit_api
+    image: fit_celery_worker
+    container_name: fit_celery_worker
+    command: /start-celeryworker
+
+  fit_celery_beat:
+    <<: *fit_api
+    image: fit_celery_beat
+    container_name: fit_celery_beat
+    command: /start-celerybeat
+
+  fit_flower:
+    <<: *fit_api
+    image: fit_flower
+    container_name: fit_flower
+    ports:
+      - "5555:5555"
+    command: /start-flower
+
+  fit_nginx:
+    build:
+      context: ./docker/local/nginx
+      dockerfile: Dockerfile
+    image: fit_nginx
+    container_name: fit_nginx
+    ports:
+      - "8080:80"
+    volumes:
+      - ./static:/app/static
+      - fit_static_data:/app/static
+      - fit_logs_store:/var/log/nginx
+    depends_on:
+      - fit_api
+    networks:
+      - fit_nw
+
+networks:
+  fit_nw:
+
+volumes:
+  fit_postgres_db_data: {}
+  fit_logs_store: {}
+  fit_static_data: {}
+  fit_redis_data: {}
