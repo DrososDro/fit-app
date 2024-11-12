@@ -17,12 +17,18 @@ def set_auth_cookies(
     access_token: str,
     refresh_token: Optional[str] = None,
 ) -> None:
+    # get the token lifetime from the settings
     access_token_lifetime = settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"].total_seconds()
+    # setting of the cookie
     cookie_settings = {
+        # path of the cookie
         "path": settings.COOKIE_PATH,
+        # secure ensures that the cookie sent ovet https
         "secure": settings.COOKIE_SECURE,
+        # access from backend and not the front end
         "httponly": settings.COOKIE_HTTPONLY,
         "samesite": settings.COOKIE_SAMESITE,
+        # the duration of the cookie
         "max_age": access_token_lifetime,
     }
     response.set_cookie("access", access_token, **cookie_settings)

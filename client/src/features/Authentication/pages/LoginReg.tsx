@@ -1,15 +1,29 @@
 import { useForm } from "react-hook-form";
 import Input from "../../../components/inputs/Input";
-import { useState } from "react";
 import { LoginType, RegisterType } from "../types/authTypes";
 import { emailValidaitor } from "../../../utils/regExp";
+import { useMutation } from "@tanstack/react-query";
+import { loginUser } from "../services/authServices";
+import { useNavigate } from "@tanstack/react-router";
 
 //TODO: term and contitions
-export default function LoginReg() {
+//
+export default function LoginReg({ isRegister = false }) {
+  const navigate = useNavigate();
+  console.log("register", isRegister);
+  const { mutate, error } = useMutation({
+    mutationFn: loginUser,
+  });
   function submitHandler(data: LoginType | RegisterType) {
-    console.log("data", data);
+    mutate(data);
   }
-  const [isRegister, setIsRegister] = useState(false);
+  function loginRegisterClick() {
+    if (isRegister) {
+      navigate({ to: "/login" });
+    } else {
+      navigate({ to: "/register" });
+    }
+  }
   const {
     register,
     handleSubmit,
@@ -21,7 +35,9 @@ export default function LoginReg() {
       <h2 className="mb-4 text-3xl font-bold uppercase text-orange-500 md:text-4xl">
         Weclome to fit Logger
       </h2>
-      <p className="text-xl font-bold capitalize">Login</p>
+      <p className="text-xl font-bold capitalize">
+        {isRegister ? "Register" : "Login"}
+      </p>
       <form
         onSubmit={handleSubmit(submitHandler)}
         className="flex flex-col items-center justify-center gap-2 md:w-5/12"
@@ -119,11 +135,14 @@ export default function LoginReg() {
               error={errors.re_password?.message}
               placeholder="confirm password"
             />
-            <div>
+            {/* <div>
               <input type="checkbox" />
               <label> accept term and conditions</label>
-            </div>
+            </div> */}
           </>
+        )}
+        {error && (
+          <div className="text-xl font-bold text-red-600">{error?.message}</div>
         )}
         <div className="flex w-full items-center justify-between">
           <button
@@ -135,7 +154,7 @@ export default function LoginReg() {
           <button
             type="button"
             className="rounded-md px-4 uppercase text-orange-500 hover:text-orange-600 hover:outline"
-            onClick={() => setIsRegister((value) => !value)}
+            onClick={loginRegisterClick}
           >
             {isRegister ? "login" : "register"}
           </button>
